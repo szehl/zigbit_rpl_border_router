@@ -1,0 +1,80 @@
+#include <stdlib.h>
+
+#include "mib-init.h"
+#include "ber.h"
+#include "utils.h"
+#include "logging.h"
+#include <avr/io.h>
+
+//#if CONTIKI_TARGET_AVR_RAVEN && ENABLE_PROGMEM
+#include <avr/pgmspace.h>
+//#else
+//#define PROGMEM
+//#endif
+
+/* common oid prefixes*/
+static u8t ber_oid_system_desc[] PROGMEM  = {0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00};
+static ptr_t oid_system_desc PROGMEM      = {ber_oid_system_desc, 8};
+/* Beuth OID*/
+static u8t ber_oid_beuth_int[] PROGMEM     = {0x2b, 0x06, 0x01, 0x04, 0x01, 0x81, 0xac, 0x5d, 0x64, 0x01};
+static ptr_t oid_beuth_int PROGMEM         = {ber_oid_beuth_int, 10};
+
+
+s8t getSysDescr(mib_object_t* object, u8t* oid, u8t len)
+{
+    if (!object->varbind.value.p_value.len) {
+        object->varbind.value.p_value.ptr = (u8t*)"Beuth MIB";
+        object->varbind.value.p_value.len = 9;
+    }
+    return 0;
+}
+
+s8t setSysDescr(mib_object_t* object, u8t* oid, u8t len, varbind_value_t value)
+{
+    object->varbind.value.p_value.ptr = (u8t*)"Beuth MIB";
+    object->varbind.value.p_value.len = 9;
+    return 0;
+}
+
+/* 110620 fschw: add Steckdose for snmpd - start */
+s8t getBeuthState(mib_object_t* object, u8t* oid, u8t len)
+{
+    object->varbind.value.i_value = ((PORTD >> PIN4) & 1);
+	printf("Get Pin State ausgeführt, Ergebnis %d\n",object->varbind.value.i_value);
+    return 0;
+}
+
+s8t setBeuthState(mib_object_t* object, u8t* oid, u8t len, varbind_value_t value)
+{
+    if (value.i_value == 1) {
+        PORTD |= (1 << PIN4);
+		printf("Set Pin ausgeführt (if==1-Zweig), Ergebnis %d\n",value.i_value);
+    } else {
+        PORTD &= ~(1 << PIN4);
+		printf("Set Pin ausgeführt (else Zweig), Ergebnis %d\n",value.i_value);
+    }
+    object->varbind.value.i_value = (PORTD & (1 << PIN4));
+	printf("Set Pin: Pin7 hat nun den Zustand:%d\n",object->varbind.value.i_value);
+	return 0;
+}
+/* 110620 fschw end */
+
+
+/*-----------------------------------------------------------------------------------*/
+/*
+ * Initialize the MIB.
+ */
+s8t mib_init()
+{
+    const u32t tconst = 12345678;
+    if (add_scalar(&oid_system_desc, 0, BER_TYPE_OCTET_STRING, 0, &getSysDescr, &setSysDescr) == -1 ) 
+	{
+        return -1;
+    }
+
+    if (add_scalar(&oid_beuth_int, 0, BER_TYPE_INTEGER, 0, &getBeuthState, &setBeuthState) == -1) 
+	{
+        return -1;
+    }
+    return 0;
+}

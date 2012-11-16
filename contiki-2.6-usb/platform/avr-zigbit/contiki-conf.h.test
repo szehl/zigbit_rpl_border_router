@@ -1,0 +1,218 @@
+/*
+* Copyright (c) 2006, Technical University of Munich
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions
+* are met:
+* 1. Redistributions of source code must retain the above copyright
+* notice, this list of conditions and the following disclaimer.
+* 2. Redistributions in binary form must reproduce the above copyright
+* notice, this list of conditions and the following disclaimer in the
+* documentation and/or other materials provided with the distribution.
+* 3. Neither the name of the Institute nor the names of its contributors
+* may be used to endorse or promote products derived from this software
+* without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+* OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+* HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+* LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+* SUCH DAMAGE.
+*
+* This file is part of the Contiki operating system.
+*
+* @(#)$$
+*/
+
+/**
+* \file
+* Configuration for AVR Zigbit Contiki kernel
+*
+* \author
+* Simon Barner <barner@in.tum.de>
+*/
+
+#ifndef __CONTIKI_CONF_H__
+#define __CONTIKI_CONF_H__
+
+#ifdef PROJECT_CONF_H
+#include "project-conf.h"
+#endif /* PROJECT_CONF_H */
+
+/* MCU and clock rate */
+#define PLATFORM PLATFORM_AVR
+#define HARWARE_REVISION ZIGBIT
+
+/* Clock ticks per second */
+#define CLOCK_CONF_SECOND 125
+
+/* Since clock_time_t is 16 bits, maximum interval is 524 seconds */
+#define RIME_CONF_BROADCAST_ANNOUNCEMENT_MAX_TIME CLOCK_CONF_SECOND * 524UL /*Default uses 600*/
+
+/* Maximum time interval (used for timers) */
+#define INFINITE_TIME 0xffff
+
+/* COM port to be used for SLIP connection */
+#define SLIP_PORT RS232_PORT_1
+
+/* Pre-allocated memory for loadable modules heap space (in bytes)*/
+#define MMEM_CONF_SIZE 256
+
+/* Use the following address for code received via the codeprop
+* facility
+*/
+#define EEPROMFS_ADDR_CODEPROP 0x8000
+
+#define CCIF
+#define CLIF
+
+#define RIMEADDR_CONF_SIZE 8
+#define PACKETBUF_CONF_HDR_SIZE 0
+
+//define UIP_CONF_IPV6 1 //Let the makefile do this, allows hello-world to compile
+#if UIP_CONF_IPV6
+#define UIP_CONF_ICMP6 1
+#define UIP_CONF_UDP 1
+#define UIP_CONF_TCP 0
+#define UIP_CONF_IPV6_RPL 1
+#endif
+
+/* The new NETSTACK interface requires RF230BB */
+#if RF230BB
+#define SICSLOWPAN_CONF_COMPRESSION SICSLOWPAN_COMPRESSION_HC06
+#define SICSLOWPAN_CONF_CONVENTIONAL_MAC 1 //for barebones driver, sicslowpan calls radio->read function
+#undef PACKETBUF_CONF_HDR_SIZE //RF230BB takes the packetbuf default for header size
+#define UIP_CONF_LLH_LEN 0
+
+/* No radio cycling */
+#if UIP_CONF_IPV6
+#define NETSTACK_CONF_NETWORK sicslowpan_driver
+#else
+#define NETSTACK_CONF_NETWORK rime_driver
+#endif
+#define NETSTACK_CONF_MAC nullmac_driver
+#define NETSTACK_CONF_RDC sicslowmac_driver
+#define NETSTACK_CONF_FRAMER framer_802154
+#define NETSTACK_CONF_RADIO rf230_driver
+#define CHANNEL_802_15_4 26
+#define RF230_CONF_AUTOACK 1
+#define RF230_CONF_AUTORETRIES 2
+#define SICSLOWPAN_CONF_FRAG 1
+//Most browsers reissue GETs after 3 seconds which stops frag reassembly, longer MAXAGE does no good
+#define SICSLOWPAN_CONF_MAXAGE 3
+#define QUEUEBUF_CONF_NUM 1
+#define QUEUEBUF_CONF_REF_NUM 1
+/* Default uip_aligned_buf and sicslowpan_aligned_buf sizes of 1280 overflows RAM */
+#define UIP_CONF_BUFFER_SIZE 1300
+
+#define SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS 1
+
+
+#else
+/* Original combined RF230/mac code will not compile with current contiki stack */
+//#define PACKETBUF_CONF_HDR_SIZE 0 //RF230 handles headers internally
+/* 0 for IPv6, or 1 for HC1, 2 for HC01 */
+#define SICSLOWPAN_CONF_COMPRESSION_IPV6 0
+#define SICSLOWPAN_CONF_COMPRESSION_HC1 1
+#define SICSLOWPAN_CONF_COMPRESSION_HC01 2 //NB '2' is now HC06 in the core mac!
+//FTH081105
+#define SICSLOWPAN_CONF_COMPRESSION SICSLOWPAN_CONF_COMPRESSION_HC01
+#define SICSLOWPAN_CONF_MAXAGE 5
+#define UIP_CONF_LLH_LEN 14
+#endif /*RF230BB */
+
+
+
+
+#define UIP_CONF_LL_802154 1
+
+#define UIP_CONF_MAX_CONNECTIONS 2
+#define UIP_CONF_MAX_LISTENPORTS 2
+#define UIP_CONF_UDP_CONNS 2
+
+#define UIP_CONF_IP_FORWARD 0
+#define UIP_CONF_FWCACHE_SIZE 0
+
+#define UIP_CONF_IPV6_CHECKS 1
+#define UIP_CONF_IPV6_QUEUE_PKT 0
+#define UIP_CONF_IPV6_REASSEMBLY 0
+/* See uip-ds6.h */
+#define UIP_CONF_DS6_NBR_NBU 2
+#define UIP_CONF_DS6_DEFRT_NBU 2
+#define UIP_CONF_DS6_PREFIX_NBU 2
+#define UIP_CONF_DS6_ROUTE_NBU 2
+#define UIP_CONF_DS6_ADDR_NBU 2
+#define UIP_CONF_DS6_MADDR_NBU 0
+#define UIP_CONF_DS6_AADDR_NBU 0
+#define UIP_CONF_DS6_ROUTE_INFO_NBU 1
+
+/* multiple intrfaces configuration*/
+#define UIP_CONF_DS6_IF_NBU 2 //number of interfaces
+#define IF_RADIO UIP_INTERFACE_0_ID //interface 0 assignment - radio
+#define UIP_LINK_LAYER_ADDRESS_LENGTH_INTERFACE_0 8 //link-layer address length of interface 0
+#if UIP_CONF_DS6_IF_NBU > 1
+#define IF_FALLBACK UIP_INTERFACE_1_ID //interface 1 assignment - fallback
+#define UIP_LINK_LAYER_ADDRESS_LENGTH_INTERFACE_1 6 //link-layer address length of interface 1
+#endif
+
+#define UIP_CONF_UDP_CHECKSUMS 1
+#define UIP_CONF_TCP_SPLIT 0
+
+#if UIP_CONF_IPV6_RPL
+
+/* Define MAX_*X_POWER to reduce tx power and ignore weak rx packets for testing a miniature multihop network.
+* Leave undefined for full power and sensitivity.
+* tx=0 (3dbm, default) to 15 (-17.2dbm)
+* RF230_CONF_AUTOACK sets the extended mode using the energy-detect register with rx=0 (-91dBm) to 84 (-7dBm)
+* else the rssi register is used having range 0 (91dBm) to 28 (-10dBm)
+* For simplicity RF230_MIN_RX_POWER is based on the energy-detect value and divided by 3 when autoack is not set.
+* On the RF230 a reduced rx power threshold will not prevent autoack if enabled and requested.
+* These numbers applied to both Raven and Jackdaw give a maximum communication distance of about 15 cm
+* and a 10 meter range to a full-sensitivity RF230 sniffer.
+#define RF230_MAX_TX_POWER 15
+#define RF230_MIN_RX_POWER 30
+*/
+
+#define UIP_CONF_ROUTER 1
+#define UIP_CONF_PICK_UP_RA 0 //ONLY FROM FALLBACK INTERFACE
+#define UIP_CONF_ND6_SEND_RA 1 //ONLY FROM FALLBACK INTERFACE
+#define UIP_CONF_ND6_REACHABLE_TIME 600000
+#define UIP_CONF_ND6_RETRANS_TIMER 10000
+
+#define UIP_CONF_DS6_ROUTE_INFORMATION 1 //RFC4191 Route information option
+
+#undef UIP_CONF_UDP_CONNS
+#define UIP_CONF_UDP_CONNS 12
+#undef UIP_CONF_FWCACHE_SIZE
+#define UIP_CONF_FWCACHE_SIZE 30
+#define UIP_CONF_BROADCAST 1
+#define UIP_ARCH_IPCHKSUM 1
+#define UIP_CONF_PINGADDRCONF 0
+#define UIP_CONF_LOGGING 1
+
+#endif /* RPL */
+
+
+#include <stdint.h>
+
+typedef int32_t s32_t;
+typedef unsigned short clock_time_t;
+typedef unsigned char u8_t;
+typedef unsigned short u16_t;
+typedef unsigned long u32_t;
+typedef unsigned short uip_stats_t;
+typedef unsigned long off_t;
+
+void clock_delay(unsigned int us2);
+void clock_wait(int ms10);
+void clock_set_seconds(unsigned long s);
+unsigned long clock_seconds(void);
+
+#endif /* __CONTIKI_CONF_H__ */
